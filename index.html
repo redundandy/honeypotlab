@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andy's Honeypot Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-box">
+            <p>Andy's Honeypot Lab &#x1F41D;</p>
+            <p>Version 1.0.0</p>
+            <p>Jan 19, 2025 @ 14:00:00 - Present</p>
+        </div>
+    </header>
+
+    <div class ="overview">
+        <h1>An Overview</h1>
+        <h2>An Introduction</h2>
+        <p>
+            This lab explores the use of Honeypots to analyze network traffic and attacker behavior. 
+            Using Azure and T-Pot, I set up Honeypot instances to capture and examine data. 
+            Before documenting this, I deployed multiple virtual machines running T-Pot, 
+            and I may continue to create new instances or decommission older ones as needed. 
+            The data presented here may include insights from multiple T-pot deployments. 
+            Additionally, this lab provides a brief overview of the setup process, 
+            offering guidance for those interested in implementing their own Honeypots.
+        </p>
+        <h2>A Quick Look</h2>
+        <p>
+            This screenshot showcases a Kibana dashboard 
+            summarizing honeypot attack activity approximately 48 hours after deploying a single honeypot instance. 
+            The data reveals substantial activity, with nearly 200,000 honeypot attacks captured. 
+            Later in this lab, I will dive deeper into the data collected.
+        </p>
+        <img src="images/t-pot-after48.png" alt="A screenshot after 48 Hours" class="screenshot">
+    </div>
+
+    <div class="setup">
+        <h1>Setup Overview</h1>
+        <p>I leveraged the $200 of credits provided to new users on Azure to setup the Honeypot and analyze the data. This can make setting up and running the Honeypot cost-free. Here is a quick tutorial on how I set everything up.</p>
+        <h2>Virtual Machine Configuration</h2>
+        <p>I had first setup a virtual machine on Azure using these specifications:</p>
+        <ul>
+            <li><strong>Operating System:</strong> Linux (Ubuntu 24.04)</li>
+            <li><strong>System:</strong> Standard E2s v3 (2 vCPUs, 16GB RAM)</li>
+            <li><strong>Storage:</strong> 256GB</li>
+        </ul>
+        <h2>Remote Access and Installing T-pot</h2>
+        <p>
+            After setting up the virtual machine, I used Putty to remotely access the virtual machine. 
+            You can also use SSH.
+        </p>
+        <p>
+            After gaining access into the virtual machine 
+            you can run the following commands in order to install T-pot. 
+            During the installation make sure you select h for a Hive installation
+            and you remember the username and password you create so that you're able
+            to login to the Honeypot.
+        </p>
+<pre>
+sudo apt update
+sudo apt upgrade -y
+sudo apt install git
+git clone https://github.com/telekom-security/tpotce.git
+cd tpotce
+./install.sh
+sudo reboot
+</pre>
+        <p>
+            After installing T-pot, 
+            you must now make sure all the ports associated with T-pot are able to be accessed. 
+            On Azure, you can do this by going into the network settings and creating a new port rule. 
+            You can go into the T-pot documentation to figure out which ports you want to allow.
+        </p>
+        <h2>Accessing the T-Pot Web UI</h2>
+        <p>Now you can access the T-Pot Web UI by entering the following in your web browser:</p>
+        <pre>https://{thevm.IP.address}:64297</pre>
+        <p>Below is what the web UI should look like after logging into the web UI.</p>
+        <img src="images/t-pot-display.png" alt="T-Pot Web UI" class="screenshot">
+    </div>
+
+    <div class="analysis">
+        <h1>Analyzing the Data</h1>
+        <p>
+            Here, we analyze real data collected from the Honeypots to uncover insights. 
+            In this section, I dive deeper into the data captured by instances of the Honeypot 
+            isolating and analyzing specific elements. Over time, 
+            I may deploy additional Honeypots or decommission older ones, 
+            dapting to evolving needs and threats. 
+            Each entry is dated alongside its title to indicate when the analysis or write-up was conducted, 
+            acknowledging that updates and further analyses may be added as new data and observations emerge.
+        </p>
+        <div class="entry">
+
+            <h2>Analyzing Some Cowrie Logs (1/21/2025)</h2>
+            <p>
+                Cowrie is an SSH/Telnet honeypot designed to log brute force attacks 
+                and shell interactions performed by the attacker. 
+                Let's look deeper into the Cowrie Logs.
+            </p>
+            <p>
+                I had setup an instance of T-Pot for some time 
+                and I isolated the events to a 24 hour time window for January 20th 2025. 
+                Below, we can see that Cowrie captured traffic from 351 Unique Sources.
+            </p>
+            <img src="images/012025screenshots/cowrie01252025.png" alt="" class="screenshot">
+            <p>
+                The Cowrie dashboard allows us to easily discover the common commands that attackers have used. 
+                Below, we can see the some of the commands used 
+                and their frequency during the previously mentioned timeframe.
+            </p>
+            <img src="images/012025screenshots/cowriecommands01252025.png" alt="" class="screenshot">
+            <p>
+                The commands captured by the Cowrie honeypot logs provide valuable insights into the behavior of attackers. 
+                Commands such as 
+                <code>enable</code>, <code>shell</code>, and <code>system</code>, 
+                suggest attempts to escalate privileges or interact more directly with the underlying system. 
+                Similarly, the command 
+                <code>sh</code> and <code>ping ;sh</code> 
+                indicate efforts to invoke a shell for executing further commands. The frequent use of 
+                <code>cat /proc/self/exe</code> and 
+                (<code>/bin/busybox cat /proc/self/exe || cat /bin/echo</code>) 
+                reflects attempts to interact with or replicate the running process, 
+                possibly as part of malware deployment or reconnaissance.
+            </p>
+
+            <p>
+                Additionally, the use of 
+                <code>uname -s -v -n -r -m</code> 
+                demonstrates efforts to gather detailed system information, 
+                such as the kernel version and architecture, to tailor future actions. 
+                More advanced commands, like 
+                <code>dd bs=52 count=1 if=.s || cat .s || while read i; d</code>, 
+                show attempts to process or manipulate data in complex ways. 
+                These patterns collectively highlight a mix of different techniques 
+                all aimed at exploiting vulnerabilities in the system.
+            </p>
+
+            <p>
+                Attackers often use automated scripts or bots to probe and exploit systems. 
+                These scripts may run a standard sequence of commands repeatedly across multiple targets. 
+                For example, the equal count of 2,824 for the commands 
+                <code>enable</code>, <code>shell</code>, and <code>system</code> 
+                likely indicates that these commands were part of a repeated automated process or script.
+                <span class="importantconclusion">
+                    From this example, we can see that automated tools and bots remain a prevalent threat, 
+                    using standardized command sequences to exploit common vulnerabilities across multiple targets.
+                </span>
+            </p>
+        </div>
+
+        <div class="entry">
+            <h2>Exploring Some Suricata Alerts (1/21/2025) </h2>
+            <p>Suricata is an open <source> network IDS, IPS, and Network Security monitoring engine. Suricata identifies malicious patterns like exploitation, malware delivery, and reconnaissance. Let's look at how Suricata is integrated within T-Pot.</p>
+            <p>Below is the default dashboard provided by Suricata on Kibana. I isolated the events to a 24 Hour Time Window for January 20th 2025 using the same VM instance in the previous analysis. We can see that Suricata captured over 300 thousand events during this 24 hour time window from over 5 thousand unique source IPs.</p>
+            <img src="images/012025screenshots/suricata01202025.png" alt="" class="screenshot">
+
+            <p>
+                Suricata matches network activity against predefined rules, 
+                some of which are designed to detect attempts to exploit known CVEs. 
+                The table below shows the Top 10 CVEs detected by Suricata during previously mentioned timeframe, 
+                ranked by the number of occurrences. 
+                The most frequently triggered CVE during the is CVE-2002-0013 and CVE-2002-0012, 
+                with a count of 90, indicating a high volume of attacks or probes targeting these vulnerabilities.
+            </p>
+
+            <img src="images/012025screenshots/suricatacve01202025.png" alt="" class="screenshot">
+
+            <p>
+                CVE-2002-0013 and CVE-2002-0012 are quite old! 
+                It is very interesting that they still are appearing in modern security monitoring logs.
+                Many organizations still use outdated or unpatched systems, 
+                particularly in smaller networks or industrial environments.
+                Attackers know this and continue to target these old vulnerabilities, 
+                hoping to find older, unprotected devices.
+                <span class="importantconclusion">
+                    This example of attackers trying to exploit an older vulnerability 
+                    highlights the importance of keeping systems updated for security.
+                </span>
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>
